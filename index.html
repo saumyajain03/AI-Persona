@@ -246,26 +246,7 @@
         </div>
       </div>
 
-      <!-- Config Panel (Collapsible) -->
-      <details class="premium-card rounded-2xl p-4 group flex-shrink-0">
-        <summary
-          class="text-xs font-display font-semibold text-zinc-500 cursor-pointer list-none flex justify-between items-center select-none">
-          <span>CALL GATEWAY CONFIG</span>
-          <span class="text-[10px] text-brand-600 group-open:rotate-180 transition-transform duration-200">▼</span>
-        </summary>
-        <div class="space-y-3 mt-3 text-xs">
-          <div>
-            <label class="block text-zinc-400 text-[10px] mb-1 font-medium">VAPI PUBLIC KEY</label>
-            <input type="password" id="vapi-public-key-input" placeholder="pub-xxxxxxxxxxxxxxxxxxxx"
-              class="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-zinc-700 focus:outline-none focus:border-brand-500 text-xs" />
-          </div>
-          <div>
-            <label class="block text-zinc-400 text-[10px] mb-1 font-medium">VAPI ASSISTANT ID</label>
-            <input type="text" id="vapi-assistant-id-input" placeholder="Vapi Assistant ID..."
-              class="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-zinc-700 focus:outline-none focus:border-brand-500 text-xs" />
-          </div>
-        </div>
-      </details>
+
 
       <!-- Logs Console (Collapsible/Minimized) -->
       <details class="premium-card rounded-2xl p-4 group flex-shrink-0">
@@ -423,8 +404,11 @@
   <!-- Script Logic -->
   <script>
     // --- Deployed Backend Configuration ---
-    // IMPORTANT: Replace this placeholder URL with your actual deployed FastAPI backend URL (e.g. from Render or Railway)
-    const DEPLOYED_BACKEND_URL = "https://your-backend-url.onrender.com";
+    const DEPLOYED_BACKEND_URL = "https://ai-persona-p4s1.onrender.com";
+
+    // --- Vapi Credentials ---
+    const VAPI_PUBLIC_KEY = "849ecfa9-9314-424a-a291-cae814f18482";
+    const VAPI_ASSISTANT_ID = "b8b7713f-8ec8-4026-a4fe-6e3c1cdb7689";
 
     // --- Global State ---
     let chatHistory = [];
@@ -450,8 +434,6 @@
     const speechIndicator = document.getElementById('speech-indicator');
     const waveformBars = document.querySelectorAll('.waveform-bar');
 
-    const vapiPublicKeyVal = document.getElementById('vapi-public-key-input');
-    const vapiAssistantIdVal = document.getElementById('vapi-assistant-id-input');
     const logsContainer = document.getElementById('logs-container');
     const clearLogsBtn = document.getElementById('clear-logs-btn');
 
@@ -463,25 +445,12 @@
 
     // --- Local Storage Credential Management ---
     document.addEventListener('DOMContentLoaded', () => {
-      const savedKey = localStorage.getItem('vapi_public_key');
-      const savedId = localStorage.getItem('vapi_assistant_id');
-      if (savedKey) vapiPublicKeyVal.value = savedKey;
-      if (savedId) vapiAssistantIdVal.value = savedId;
-
       // Render Initial Evals
       renderEvals();
 
       // Default idle waveform movement
       animateWaveformIdle();
     });
-
-    const saveCredentials = () => {
-      localStorage.setItem('vapi_public_key', vapiPublicKeyVal.value.trim());
-      localStorage.setItem('vapi_assistant_id', vapiAssistantIdVal.value.trim());
-    };
-
-    vapiPublicKeyVal.addEventListener('change', saveCredentials);
-    vapiAssistantIdVal.addEventListener('change', saveCredentials);
 
     // --- Log Output Function ---
     const addLog = (message, type = 'SYSTEM') => {
@@ -909,14 +878,8 @@
     };
 
     startCallBtn.addEventListener('click', async () => {
-      const pubKey = vapiPublicKeyVal.value.trim();
-      const assistantId = vapiAssistantIdVal.value.trim();
-
-      if (!pubKey || !assistantId) {
-        addLog('Public Key & Assistant ID are required to call Vapi.', 'ERROR');
-        alert('Please fill out your Vapi Public Key and Vapi Assistant ID inside the CALL GATEWAY CONFIG section first.');
-        return;
-      }
+      const pubKey = VAPI_PUBLIC_KEY;
+      const assistantId = VAPI_ASSISTANT_ID;
 
       // Pre-flight check for secure WebRTC contexts (browsers block mic access on [::] or external HTTP)
       if (!window.isSecureContext || !navigator.mediaDevices) {
