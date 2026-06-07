@@ -56,8 +56,8 @@ elif gemini_api_key:
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key=gemini_api_key
     )
-    voice_model = "gemini-flash-latest"
-    logger.info("Voice LLM Provider: Google Gemini via OpenAI-compat (gemini-flash-latest)")
+    voice_model = "gemini-1.5-flash"
+    logger.info("Voice LLM Provider: Google Gemini via OpenAI-compat (gemini-1.5-flash)")
 else:
     llm_provider = None
     logger.warning("No LLM API keys found.")
@@ -121,7 +121,7 @@ if llm_provider == "openai":
 elif llm_provider == "gemini":
     import google.generativeai as genai
     genai.configure(api_key=gemini_api_key)
-    gemini_model = genai.GenerativeModel("gemini-flash-latest", tools=[check_available_slots, create_booking])
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash", tools=[check_available_slots, create_booking])
 
     async def _stream_gemini_impl(chat, message):
         stream = await chat.send_message_async(message)
@@ -239,7 +239,7 @@ async def chat_endpoint(request: ChatRequest):
             
         import google.generativeai as genai
         model = genai.GenerativeModel(
-            model_name="gemini-flash-latest",
+            model_name="gemini-1.5-flash",
             tools=[check_available_slots, create_booking],
             system_instruction=system_prompt
         )
