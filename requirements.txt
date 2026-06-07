@@ -1,0 +1,10 @@
+PyGithub>=2.1.0
+openai>=1.0.0
+chromadb>=0.4.0
+pinecone-client>=3.0.0
+langchain-text-splitters>=0.2.0
+python-dotenv>=1.0.0
+pdfplumber>=0.10.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+google-generativeai>=0.3.0
