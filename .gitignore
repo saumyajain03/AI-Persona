@@ -1,1 +1,10 @@
+# Ignore Python backend files to prevent Vercel from building Serverless Functions
+*.py
+requirements.txt
+.venv
+__pycache__
+chroma_db
+data
+test_*.py
 .env
+evaluation_report.md
