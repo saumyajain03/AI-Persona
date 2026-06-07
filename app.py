@@ -118,6 +118,12 @@ _stream_gemini = None
 if llm_provider == "openai":
     from openai import AsyncOpenAI
     openai_client = AsyncOpenAI(api_key=openai_api_key)
+elif llm_provider == "groq":
+    from openai import AsyncOpenAI
+    openai_client = AsyncOpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        api_key=groq_api_key
+    )
 elif llm_provider == "gemini":
     import google.generativeai as genai
     genai.configure(api_key=gemini_api_key)
