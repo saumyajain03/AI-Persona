@@ -392,14 +392,24 @@ async def vapi_chat_completions(request: Request):
         compiled_messages = []
         has_system_msg = False
         for m in incoming_messages:
-            if m.get("role") == "system":
+            role = m.get("role")
+            if role == "system":
                 # Merge the context-rich RAG prompt with Vapi's dashboard prompt
                 vapi_system_prompt = m.get("content", "")
                 merged_content = f"{system_prompt}\n\nAdditional Instructions:\n{vapi_system_prompt}" if vapi_system_prompt else system_prompt
                 compiled_messages.append({"role": "system", "content": merged_content})
                 has_system_msg = True
-            elif "role" in m and "content" in m:
-                compiled_messages.append({"role": m["role"], "content": m["content"]})
+            elif role:
+                msg_to_append = {"role": role}
+                if "content" in m:
+                    msg_to_append["content"] = m["content"]
+                if "tool_calls" in m:
+                    msg_to_append["tool_calls"] = m["tool_calls"]
+                if "tool_call_id" in m:
+                    msg_to_append["tool_call_id"] = m["tool_call_id"]
+                if "name" in m:
+                    msg_to_append["name"] = m["name"]
+                compiled_messages.append(msg_to_append)
         
         # If no system prompt was present in the incoming history, prepend the RAG prompt
         if not has_system_msg:
@@ -448,12 +458,25 @@ async def vapi_webhook(payload: dict):
         func_name = tc.get("function", {}).get("name")
         arguments = tc.get("function", {}).get("arguments", {})
         
-        if func_name == "check_available_slots" or func_name == "get_available_slots":
-            res = check_available_slots()
-        elif func_name == "create_booking" or func_name == "book_meeting":
-            res = create_booking(arguments.get("start_time"), arguments.get("name"), arguments.get("email"))
-        else:
-            res = "Unrecognized tool"
+        # Safely parse arguments if they are sent as a string
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except Exception as e:
+                logger.error(f"Failed to parse tool arguments string: {e}")
+                arguments = {}
+        
+        try:
+            if func_name == "check_available_slots" or func_name == "get_available_slots":
+                res = check_available_slots()
+            elif func_name == "create_booking" or func_name == "book_meeting":
+                res = create_booking(arguments.get("start_time"), arguments.get("name"), arguments.get("email"))
+            else:
+                res = "Unrecognized tool"
+        except Exception as tool_err:
+            logger.error(f"Error executing tool {func_name}: {tool_err}")
+            res = f"Error executing tool: {str(tool_err)}"
+            
         results.append({"toolCallId": tool_id, "result": res})
     return {"results": results}
 
