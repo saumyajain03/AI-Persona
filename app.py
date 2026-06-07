@@ -43,8 +43,8 @@ voice_model = None
 if groq_api_key:
     llm_provider = "groq"
     voice_client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=groq_api_key)
-    voice_model = "llama3-70b-8192"
-    logger.info("Voice LLM Provider: Groq (llama3-70b-8192)")
+    voice_model = "llama-3.3-70b-versatile"
+    logger.info("Voice LLM Provider: Groq (llama-3.3-70b-versatile)")
 elif openai_api_key:
     llm_provider = "openai"
     voice_client = OpenAI(api_key=openai_api_key)
