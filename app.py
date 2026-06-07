@@ -56,8 +56,8 @@ elif gemini_api_key:
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key=gemini_api_key
     )
-    voice_model = "gemini-2.0-flash"
-    logger.info("Voice LLM Provider: Google Gemini via OpenAI-compat (gemini-2.0-flash)")
+    voice_model = "gemini-2.5-flash-lite"
+    logger.info("Voice LLM Provider: Google Gemini via OpenAI-compat (gemini-2.5-flash-lite)")
 else:
     llm_provider = None
     logger.warning("No LLM API keys found.")
@@ -121,10 +121,10 @@ if llm_provider == "openai":
 elif llm_provider == "gemini":
     import google.generativeai as genai
     genai.configure(api_key=gemini_api_key)
-    gemini_model = genai.GenerativeModel("gemini-2.0-flash", tools=[check_available_slots, create_booking])
+    gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite", tools=[check_available_slots, create_booking])
 
     async def _stream_gemini_impl(chat, message):
-        stream = await chat.send_message_async(message)
+        stream = await chat.send_message_async(message, stream=True)
         function_calls = []
         async for chunk in stream:
             if hasattr(chunk, "candidates") and chunk.candidates:
@@ -157,7 +157,7 @@ elif llm_provider == "gemini":
                         response={"result": res}
                     )
                 )
-                follow_up_stream = await chat.send_message_async(response_part)
+                follow_up_stream = await chat.send_message_async(response_part, stream=True)
                 async for chunk in follow_up_stream:
                     try:
                         if chunk.text:
@@ -239,7 +239,7 @@ async def chat_endpoint(request: ChatRequest):
             
         import google.generativeai as genai
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash-lite",
             tools=[check_available_slots, create_booking],
             system_instruction=system_prompt
         )
