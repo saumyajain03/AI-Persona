@@ -3,8 +3,9 @@ import json
 import logging
 from typing import List, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import OpenAI  # Added standard client for Groq routing
@@ -20,6 +21,17 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Saumya Jain AI Persona Chatbot API")
+
+# Serve static frontend files (index.html, vapi-web-bundle.js, etc.)
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+@app.get("/")
+async def serve_frontend():
+    return FileResponse("index.html")
+
+@app.get("/vapi-web-bundle.js")
+async def serve_vapi_bundle():
+    return FileResponse("vapi-web-bundle.js", media_type="application/javascript")
 
 # Add CORS middleware
 app.add_middleware(
@@ -39,20 +51,21 @@ groq_api_key = os.environ.get("GROQ_API_KEY")
 voice_client = None
 voice_model = None
 
+from openai import AsyncOpenAI
 # Primary fallback logic including Groq for low-latency voice
 if groq_api_key:
     llm_provider = "groq"
-    voice_client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=groq_api_key)
+    voice_client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=groq_api_key)
     voice_model = "llama-3.3-70b-versatile"
     logger.info("Voice LLM Provider: Groq (llama-3.3-70b-versatile)")
 elif openai_api_key:
     llm_provider = "openai"
-    voice_client = OpenAI(api_key=openai_api_key)
+    voice_client = AsyncOpenAI(api_key=openai_api_key)
     voice_model = "gpt-4o-mini"
     logger.info("Voice LLM Provider: OpenAI (gpt-4o-mini)")
 elif gemini_api_key:
     llm_provider = "gemini"
-    voice_client = OpenAI(
+    voice_client = AsyncOpenAI(
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key=gemini_api_key
     )
@@ -385,10 +398,11 @@ async def vapi_chat_completions(request: Request):
                 latest_query = m.get("content", "")
                 break
         
+        import asyncio
         # 2. Grab Context (with fallback if vector store fails)
         try:
             store = vector_store.get_default_store()
-            chunks = store.query(latest_query, top_k=3)
+            chunks = await asyncio.to_thread(store.query, latest_query, top_k=3)
             system_prompt = _build_system_prompt(chunks)
         except Exception as ve:
             logger.error(f"Vector store search failed, using fallback prompt: {ve}")
@@ -427,13 +441,12 @@ async def vapi_chat_completions(request: Request):
                 if not voice_client or not voice_model:
                     raise ValueError("No LLM API keys configured. Set GROQ_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY.")
                 
-                response = voice_client.chat.completions.create(
+                response = await voice_client.chat.completions.create(
                     model=voice_model,
                     messages=compiled_messages,
-                    tools=payload.get("tools", openai_tools) if payload.get("tools") else None,
                     stream=True
                 )
-                for chunk in response:
+                async for chunk in response:
                     # Convert object safely to dict first, then to json string
                     chunk_dict = chunk.model_dump()
                     yield f"data: {json.dumps(chunk_dict)}\n\n"
