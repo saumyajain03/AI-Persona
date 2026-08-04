@@ -81,7 +81,7 @@ groq_client = voice_client
 # Tools for meeting booking
 def check_available_slots() -> str:
     logger.info("Tool check_available_slots invoked.")
-    slots = booking_tools.get_available_slots()
+    slots = booking_tools.get_available_slots(limit=3)
     if not slots:
         return "No available slots found in the next 7 days."
     return "Available slots (first 3):\n" + "\n".join(slots)

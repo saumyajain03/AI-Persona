@@ -14,13 +14,16 @@ logger = logging.getLogger(__name__)
 CAL_API_KEY = os.getenv("CAL_API_KEY")
 CAL_EVENT_TYPE_ID = os.getenv("CAL_EVENT_TYPE_ID")
 
-def get_available_slots():
+def get_available_slots(limit=None):
     """
     Fetches available slots from Cal.com API for the next 7 days in UTC.
     Uses 'cal-api-version': '2024-09-04' header.
     
+    Args:
+        limit (int, optional): Max number of slots to return.
+        
     Returns:
-        List[str]: The first 3 available timestamp slots as ISO strings.
+        List[str]: The available timestamp slots as ISO strings.
     """
     if not CAL_API_KEY:
         logger.error("CAL_API_KEY is not configured in the environment.")
@@ -89,10 +92,14 @@ def get_available_slots():
         # Sort timestamps to ensure chronological order
         all_timestamps.sort()
         
-        # Get the first 3
-        first_3_slots = all_timestamps[:3]
-        logger.info(f"Found {len(all_timestamps)} slots, returning first 3: {first_3_slots}")
-        return first_3_slots
+        # Apply limit if specified
+        if limit is not None:
+            result_slots = all_timestamps[:limit]
+        else:
+            result_slots = all_timestamps
+            
+        logger.info(f"Found {len(all_timestamps)} slots, returning {len(result_slots)} slots.")
+        return result_slots
         
     except Exception as e:
         logger.error(f"Exception raised in get_available_slots: {e}")
