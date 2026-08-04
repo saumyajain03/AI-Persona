@@ -595,8 +595,9 @@
         endCallBtn.classList.add('bg-rose-500', 'hover:bg-rose-600', 'text-white');
       });
 
-      vapiInstance.on('call-end', () => {
-        addLog('Uplink severed.', 'CALL');
+      vapiInstance.on('call-end', (callEndData) => {
+        const reason = callEndData?.endedReason || 'unknown';
+        addLog(`Uplink severed. Reason: ${reason}`, 'CALL');
         callStatusLabel.innerText = 'SYS_IDLE_STANDBY';
         callStatusLabel.className = 'text-xs text-zinc-400 font-mono tracking-widest';
         
@@ -625,7 +626,14 @@
       });
 
       vapiInstance.on('error', (error) => {
-        addLog(`Link Error: ${error.message || error}`, 'ERROR');
+        const msg = error?.error?.message || error?.message || JSON.stringify(error);
+        addLog(`Link Error: ${msg}`, 'ERROR');
+      });
+
+      vapiInstance.on('message', (message) => {
+        if (message?.type === 'transcript' && message?.transcriptType === 'final') {
+          addLog(`[${message.role?.toUpperCase()}]: ${message.transcript}`, 'INFO');
+        }
       });
     };
 
@@ -656,11 +664,10 @@
           setupVapiEvents(vapi);
         }
         
-        // NOTE: Vapi is a cloud service — it CANNOT reach localhost.
-        // For local dev, set VAPI_LOCAL_URL to your ngrok tunnel (e.g. https://xxxx.ngrok-free.app)
-        // For production, leave VAPI_LOCAL_URL as empty string "".
-        const VAPI_LOCAL_URL = "https://yen-manhandle-stimulant.ngrok-free.dev"; // <-- paste your ngrok URL here when testing locally
-        const completionsUrl = VAPI_LOCAL_URL 
+        // Auto-detect: if running locally use ngrok tunnel, if on Render use the deployed URL.
+        const isLocalDevCall = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const VAPI_LOCAL_URL = isLocalDevCall ? "https://yen-manhandle-stimulant.ngrok-free.dev" : "";
+        const completionsUrl = VAPI_LOCAL_URL
           ? `${VAPI_LOCAL_URL}/chat/completions`
           : `${DEPLOYED_BACKEND_URL}/chat/completions`;
 

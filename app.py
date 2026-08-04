@@ -423,7 +423,7 @@ async def vapi_chat_completions(request: Request):
         if not has_system_msg:
             compiled_messages.insert(0, {"role": "system", "content": system_prompt})
         
-        # 4. Stream generator with exact chunk parsing
+        # 4. Stream generator — emit clean OpenAI-compatible SSE chunks for Vapi
         async def sse_stream_generator():
             try:
                 if not voice_client or not voice_model:
@@ -435,9 +435,33 @@ async def vapi_chat_completions(request: Request):
                     stream=True
                 )
                 async for chunk in response:
-                    # Convert object safely to dict first, then to json string
-                    chunk_dict = chunk.model_dump()
-                    yield f"data: {json.dumps(chunk_dict)}\n\n"
+                    # Build a CLEAN OpenAI-compatible chunk — strip Groq-specific extra fields
+                    # that Vapi's SSE parser cannot handle (e.g. x_groq, full usage objects).
+                    choices = []
+                    for c in (chunk.choices or []):
+                        delta = {}
+                        if c.delta:
+                            if c.delta.role:
+                                delta["role"] = c.delta.role
+                            if c.delta.content is not None:
+                                delta["content"] = c.delta.content
+                            if c.delta.tool_calls:
+                                delta["tool_calls"] = [
+                                    tc.model_dump() for tc in c.delta.tool_calls
+                                ]
+                        choices.append({
+                            "index": c.index,
+                            "delta": delta,
+                            "finish_reason": c.finish_reason,
+                        })
+                    clean_chunk = {
+                        "id": chunk.id,
+                        "object": "chat.completion.chunk",
+                        "created": chunk.created,
+                        "model": "openai",  # Vapi expects this to match the model it sent
+                        "choices": choices,
+                    }
+                    yield f"data: {json.dumps(clean_chunk)}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as stream_err:
                 logger.error(f"Error inside voice stream loop: {stream_err}")
