@@ -416,8 +416,8 @@
       chatHistory.push({ role: 'user', content: message });
       const assistantBubble = addAssistantBubble();
 
-      const isLocalDev = window.location.port === '3000' || window.location.protocol === 'file:';
-      const chatUrl = isLocalDev ? 'http://localhost:8001/chat' : `${DEPLOYED_BACKEND_URL}/chat`;
+      const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const chatUrl = isLocalDev ? `http://${window.location.hostname}:8000/chat` : `${DEPLOYED_BACKEND_URL}/chat`;
 
       try {
         const response = await fetch(chatUrl, {
@@ -598,8 +598,13 @@
           setupVapiEvents(vapi);
         }
         
-        const isLocalDev = window.location.port === '3000' || window.location.protocol === 'file:';
-        const completionsUrl = isLocalDev ? 'http://localhost:8001/chat/completions' : `${DEPLOYED_BACKEND_URL}/chat/completions`;
+        // NOTE: Vapi is a cloud service — it CANNOT reach localhost.
+        // For local dev, set VAPI_LOCAL_URL to your ngrok tunnel (e.g. https://xxxx.ngrok-free.app)
+        // For production, leave VAPI_LOCAL_URL as empty string "".
+        const VAPI_LOCAL_URL = "https://yen-manhandle-stimulant.ngrok-free.dev"; // <-- paste your ngrok URL here when testing locally
+        const completionsUrl = VAPI_LOCAL_URL 
+          ? `${VAPI_LOCAL_URL}/chat/completions`
+          : `${DEPLOYED_BACKEND_URL}/chat/completions`;
 
         await vapi.start(VAPI_ASSISTANT_ID, {
           model: { provider: "custom-llm", url: completionsUrl, model: "openai" }
@@ -628,7 +633,7 @@
       checkSlotsBtn.innerText = 'Querying Grid...';
       
       const isLocalDev = window.location.port === '3000' || window.location.protocol === 'file:';
-      const slotsUrl = isLocalDev ? 'http://localhost:8001/slots' : `${DEPLOYED_BACKEND_URL}/slots`;
+      const slotsUrl = isLocalDev ? `http://${window.location.hostname}:8000/slots` : `${DEPLOYED_BACKEND_URL}/slots`;
 
       try {
         const response = await fetch(slotsUrl);
@@ -673,7 +678,7 @@
       confirmBookingBtn.innerText = 'Transmitting...';
 
       const isLocalDev = window.location.port === '3000' || window.location.protocol === 'file:';
-      const bookingsUrl = isLocalDev ? 'http://localhost:8001/bookings' : `${DEPLOYED_BACKEND_URL}/bookings`;
+      const bookingsUrl = isLocalDev ? `http://${window.location.hostname}:8000/bookings` : `${DEPLOYED_BACKEND_URL}/bookings`;
 
       try {
         const response = await fetch(bookingsUrl, {

@@ -237,13 +237,8 @@ def _build_system_prompt(chunks: List[Dict[str, Any]]) -> str:
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    try:
-        store = vector_store.get_default_store()
-        chunks = store.query(request.message, top_k=5)
-        system_prompt = _build_system_prompt(chunks)
-    except Exception as e:
-        logger.error(f"Vector store query failed: {e}")
-        system_prompt = "You are Saumya Jain, a AI/ML engineer. Be clear and concise."
+    # Use hardcoded persona prompt directly (vector store bypassed for speed)
+    system_prompt = _build_system_prompt([])
         
     if llm_provider == "gemini":
         gemini_history = []
@@ -398,15 +393,8 @@ async def vapi_chat_completions(request: Request):
                 latest_query = m.get("content", "")
                 break
         
-        import asyncio
-        # 2. Grab Context (with fallback if vector store fails)
-        try:
-            store = vector_store.get_default_store()
-            chunks = await asyncio.to_thread(store.query, latest_query, top_k=3)
-            system_prompt = _build_system_prompt(chunks)
-        except Exception as ve:
-            logger.error(f"Vector store search failed, using fallback prompt: {ve}")
-            system_prompt = "You are Saumya Jain, a backend engineer. Be clear and concise."
+        # Use hardcoded persona prompt directly (vector store bypassed for speed)
+        system_prompt = _build_system_prompt([])
         
         # 3. Reassemble history cleanly and merge system messages to avoid duplicates/conflicts
         compiled_messages = []
